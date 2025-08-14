@@ -1,0 +1,14 @@
+    name: My First Workflow
+
+    on: [push] # Triggers on every push to any branch
+
+    jobs:
+      build:
+        runs-on: ubuntu-latest # Specifies the runner environment
+
+        steps:
+          - name: Checkout code
+            uses: actions/checkout@v4 # Action to check out your repository code
+
+          - name: Run a simple command
+            run: echo "Hello from GitHub Actions!"
