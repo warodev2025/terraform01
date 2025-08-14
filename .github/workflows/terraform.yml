@@ -1,0 +1,45 @@
+name: Azure Terraform Deployment
+
+on:
+  push:
+    branches:
+      - main # Trigger on push to the main branch
+  pull_request:
+    branches:
+      - main # Trigger on pull requests to the main branch
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # Required for OIDC authentication
+      contents: read
+      pull-requests: write # For attaching plan output to PRs
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.x.x # Specify your desired Terraform version
+
+      - name: Terraform Init
+        id: init
+        run: terraform init -backend-config="resource_group_name=${{ secrets.TF_STATE_RG }}" -backend-config="storage_account_name=${{ secrets.TF_STATE_SA }}" -backend-config="container_name=${{ secrets.TF_STATE_CONTAINER }}" -backend-config="key=terraform.tfstate"
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color
+
+      - name: Terraform Apply
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' # Only apply on push to main
+        run: terraform apply -auto-approve
